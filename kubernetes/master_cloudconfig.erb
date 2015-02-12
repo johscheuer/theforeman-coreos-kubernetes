@@ -1,0 +1,147 @@
+#cloud-config
+<%#
+kind: snippet
+name: master_cloudconfig
+oses:
+- CoreOS
+%>
+      coreos:
+        fleet:
+          metadata: "role=kube-master"
+          etcd_servers: "<%= @host.params['etcd_servers'] %>"
+        units:
+          - name: etcd.service
+            command: start
+          - name: fleet.service
+            command: start
+          - name: flannel.service
+            command: start
+            content: |
+              [Unit]
+              After=network-online.target
+              Wants=network-online.target
+              Description=flannel is an etcd backed overlay network for containers
+              [Service]
+              Type=notify
+              ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/flanneld
+              ExecStartPre=/usr/bin/chmod +x /opt/bin/flanneld
+              ExecStart=/opt/bin/flanneld -etcd-endpoints="<%= @host.params['etcd_servers'] %>"
+          - name: add-flannel-host-ip.service
+            command: start
+            content: |
+              [Unit]
+              After=flannel.service
+              Wants=flannel.service
+              Description=Adds the Flannel host ip to the env variables to use them for the docker bridge
+              [Service]
+              Type=oneshot
+              EnvironmentFile=/run/flannel/subnet.env
+          - name: docker.service
+            command: start
+            content: |
+              [Unit]
+              After=add-flannel-host-ip.service
+              Requires=add-flannel-host-ip.service
+              Description=Docker Application Container Engine
+              Documentation=http://docs.docker.io
+              [Service]
+              EnvironmentFile=/run/flannel/subnet.env
+              ExecStartPre=/bin/mount --make-rprivate /
+              ExecStartPre=/usr/bin/echo ${FLANNEL_SUBNET}
+              ExecStart=/bin/bash -c "/usr/bin/docker -d --bip=${FLANNEL_SUBNET} --mtu=${FLANNEL_MTU} -s=overlay -H fd:// --dns=${FLANNEL_IP}"
+              [Install]
+              WantedBy=multi-user.target
+          - name: kube-apiserver.service
+            command: start
+            content: |
+              [Unit]
+              Description=Kubernetes API Server
+              Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+              After=flannel.service etcd.service
+              Requires=flannel.service etcd.service
+              [Service]
+              ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/kube-apiserver
+              ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-apiserver
+              ExecStart=/opt/bin/kube-apiserver \
+              --address=0.0.0.0 \
+              --port=8080 \
+              --portal_net=<%= @host.params['overlay_network'] %> \
+              --etcd_servers="<%= @host.params['etcd_servers'] %>" \
+              --logtostderr=true
+              Restart=always
+              RestartSec=10
+          - name: kube-controller-manager.service
+            command: start
+            content: |
+              [Unit]
+              Description=Kubernetes Controller Manager
+              Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+              After=kube-apiserver.service
+              Requires=kube-apiserver.service
+              [Service]
+              ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/kube-controller-manager
+              ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-controller-manager
+              ExecStartPre=/usr/bin/curl 127.0.0.1:8080
+              ExecStart=/opt/bin/kube-controller-manager --master=127.0.0.1:8080 --logtostderr=true
+              Restart=always
+              RestartSec=10
+          - name: kube-scheduler.service
+            command: start
+            content: |
+              [Unit]
+              Description=Kubernetes Scheduler
+              Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+              After=kube-apiserver.service
+              Requires=kube-apiserver.service
+              [Service]
+              ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/kube-scheduler
+              ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-scheduler
+              ExecStart=/opt/bin/kube-scheduler --master=127.0.0.1:8080
+              Restart=always
+              RestartSec=10
+          - name: kube-register.service
+            command: start
+            content: |
+              [Unit]
+              Description=Kubernetes Register
+              Documentation=https://github.com/kelseyhightower/kube-register
+              After=kube-apiserver.service
+              Requires=kube-apiserver.service
+              [Service]
+              ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/kube-register
+              ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-register
+              ExecStart=/opt/bin/kube-register \
+              --metadata=role=kube-worker \
+              --fleet-endpoint=<%= @host.params['fleet_endpoint'] %> \
+              --api-endpoint=http://127.0.0.1:8080
+          - name: skydns.service
+            command: start
+            content: |
+              [Unit]
+              Description=SkyDNS Service
+              Documentation=https://github.com/skynetservices/skydns
+              After=kube-apiserver.service
+              Requires=kube-apiserver.service
+              [Service]
+              ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/skydns
+              ExecStartPre=/usr/bin/chmod +x /opt/bin/skydns
+              ExecStart=/opt/bin/skydns \
+              -discover=true \
+              -kubernetes=true \
+              -machines=<%= @host.params['etcd_servers'] %> \
+              -master=127.0.0.1:8080 \
+              -logtostderr=true
+              Restart=always
+              RestartSec=10
+<% if @host.params['ssh_authorized_keys'] -%>
+      ssh_authorized_keys:
+  <% @host.params['ssh_authorized_keys'].split(',').map(&:strip).each do |ssh_key| -%>
+      - "<%= ssh_key %>"
+  <% end -%>
+<% end -%>
