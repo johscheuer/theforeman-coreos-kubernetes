@@ -1,4 +1,4 @@
-# Snipptes
+# Snippets
 
 You have to create a host parameter cloudconfig and insert the specific snippet name to use the different snippets with the same provisioning template.
 
