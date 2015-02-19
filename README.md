@@ -44,6 +44,10 @@ You should define a parent host group for your kubernetes deployment with the fo
 
 * etcd_servers: Your etcd servers seperated with a "," e.g. http://172.24.1.150:4001,http://172.24.1.140
 
+## Note
+
+If you want to run Kubernetes with a Master and some Minions you need to start at least one etcd node and create the etcd_servers host-param which points to the etcd node(s).
+
 ## kubernetes master_cloudconfig
 
 This snippet installs a kubernetes-master which allows you to interact with kubernetes and deploy your services.
