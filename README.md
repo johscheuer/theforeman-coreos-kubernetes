@@ -85,3 +85,4 @@ For the deployment the following tools were used:
 * [Kubernetes](https://github.com/GoogleCloudPlatform/kubernetes): Container Cluster Manager.
 * [skydns](https://github.com/skynetservices/skydns): A dynamic DNS Service with etcd backend.
 * [kube-register](https://github.com/kelseyhightower/kube-register): Register Kubernetes Kubelet machines with the Kubernetes API server using Fleet data.
+* [CoreOS](https://github.com/coreos): Linux for Massive Server Deployments.
