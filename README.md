@@ -8,8 +8,8 @@ The easiest way to import these templates into your foreman is using [foreman_te
 
 I used 2 rake tasks for different prefixes:
 
-`foreman-rake templates:sync repo="THIS REPO" prefix="kubernetes" dirname="/kubernetes"`
-`foreman-rake templates:sync repo="THIS REPO" prefix="etcd" dirname="/etcd"`
+`foreman-rake templates:sync repo="https://github.com/johscheuer/theforeman-coreos-kubernetes.git" prefix="kubernetes" dirname="/kubernetes"`
+`foreman-rake templates:sync repo="https://github.com/johscheuer/theforeman-coreos-kubernetes.git" prefix="etcd" dirname="/etcd"`
 
 If you want to use different prefixes you have to adjust the names of the snippets.
 
