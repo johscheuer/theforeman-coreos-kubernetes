@@ -117,7 +117,7 @@ oses:
               ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/kube-register
               ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-register
               ExecStart=/opt/bin/kube-register \
-              -metadata=kube-minion \
+              -metadata=role=kube-minion \
               -fleet-endpoint=<%= @host.params['fleet_endpoint'] %> \
               -api-endpoint=http://127.0.0.1:8080
           - name: skydns.service

@@ -55,7 +55,9 @@ oses:
               ExecStartPre=-/usr/bin/mkdir -p /opt/bin
               ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/flanneld
               ExecStartPre=/usr/bin/chmod +x /opt/bin/flanneld
-              ExecStart=/opt/bin/flanneld -etcd-endpoints="<%= etcd_servers %>"
+              ExecStart=/opt/bin/flanneld -etcd-endpoints="127.0.0.1:4001"
+              Restart=on-failure
+              RestartSec=10
           - name: add-flannel-host-ip.service
             command: start
             content: |
@@ -146,9 +148,9 @@ oses:
               ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/kube-register
               ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-register
               ExecStart=/opt/bin/kube-register \
-              --metadata=role=kube-worker \
-              --fleet-endpoint=127.0.0.1:4001 \
-              --api-endpoint=http://127.0.0.1:8080
+              -metadata=role=kube-standalone \
+              -fleet-endpoint=127.0.0.1:4001 \
+              -api-endpoint=http://127.0.0.1:8080
           - name: kube-proxy.service
             command: start
             content: |
@@ -159,7 +161,7 @@ oses:
               Requires=flannel.service
               [Service]
               ExecStartPre=-/usr/bin/mkdir -p /opt/bin
-              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/g/kube-proxy
+              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/kube-proxy
               ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-proxy
               ExecStartPre=/usr/bin/curl 127.0.0.1:8080
               ExecStart=/opt/bin/kube-proxy \
@@ -178,7 +180,7 @@ oses:
               Requires=flannel.service
               [Service]
               ExecStartPre=-/usr/bin/mkdir -p /opt/bin
-              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/g/kubelet
+              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/kubelet
               ExecStartPre=/usr/bin/chmod +x /opt/bin/kubelet
               ExecStartPre=/usr/bin/curl 127.0.0.1:8080
               ExecStart=/opt/bin/kubelet \
