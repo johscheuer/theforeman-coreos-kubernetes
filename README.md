@@ -46,7 +46,8 @@ You should define a parent host group for your kubernetes deployment with the fo
 
 ## Note
 
-If you want to run Kubernetes with a Master and some Minions you need to start at least one etcd node and create the etcd_servers host-param which points to the etcd node(s).
+* If you want to run Kubernetes with a Master and some Minions you need to start at least one etcd node and create the etcd_servers host-param which points to the etcd node(s).
+* If you use CoreOS < 561.0.0 you have to change the Daemon [storage-driver](https://docs.docker.com/reference/commandline/cli/#daemon-storage-driver-option) btrfs because because overlay is unsupported on btrfs.
 
 ## kubernetes master_cloudconfig
 
