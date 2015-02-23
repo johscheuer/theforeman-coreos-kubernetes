@@ -37,6 +37,7 @@ oses:
               [Service]
               Type=oneshot
               EnvironmentFile=/run/flannel/subnet.env
+              ExecStart=/usr/bin/bash -c "echo FLANNEL_IP=${FLANNEL_SUBNET} | cut -d/ -f1 >> /run/flannel/subnet.env"
           - name: docker.service
             command: start
             content: |
