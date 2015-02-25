@@ -82,6 +82,7 @@ oses:
               After=flannel.service
               Requires=flannel.service
               [Service]
+              EnvironmentFile=/run/flannel/subnet.env
               ExecStartPre=-/usr/bin/mkdir -p /opt/bin
               ExecStartPre=-/usr/bin/mkdir -p /etc/kubernetes/manifests
               ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/kubelet
@@ -94,7 +95,9 @@ oses:
               --etcd_servers=<%= @host.params['etcd_servers'] %> \
               --logtostderr=true \
               --api_servers=<%= @host.params['kubernetes_servers'] %> \
-              --config=/etc/kubernetes/manifests
+              --config=/etc/kubernetes/manifests \
+              --cluster_domain=<%= @host.params['domain-name'] || 'local.domain.com' %> \
+              --cluster_dns=${FLANNEL_IP}
               Restart=always
               RestartSec=10
           - name: skydns.service
