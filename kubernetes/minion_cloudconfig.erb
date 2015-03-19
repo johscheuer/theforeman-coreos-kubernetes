@@ -29,30 +29,19 @@ oses:
               ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/flanneld
               ExecStartPre=/usr/bin/chmod +x /opt/bin/flanneld
               ExecStart=/opt/bin/flanneld -etcd-endpoints="<%= @host.params['etcd_servers'] %>"
-          - name: add-flannel-host-ip.service
-            command: start
-            content: |
-              [Unit]
-              After=flannel.service
-              Wants=flannel.service
-              Description=Adds the Flannel host ip to the env variables to use them for the docker bridge
-              [Service]
-              Type=oneshot
-              EnvironmentFile=/run/flannel/subnet.env
-              ExecStart=/usr/bin/bash -c "echo FLANNEL_IP=${FLANNEL_SUBNET} | cut -d/ -f1 >> /run/flannel/subnet.env"
           - name: docker.service
             command: start
             content: |
               [Unit]
-              After=add-flannel-host-ip.service
-              Requires=add-flannel-host-ip.service
+              After=flannel.service
+              Requires=flannel.service
               Description=Docker Application Container Engine
               Documentation=http://docs.docker.io
               [Service]
               EnvironmentFile=/run/flannel/subnet.env
               ExecStartPre=/bin/mount --make-rprivate /
               ExecStartPre=/usr/bin/echo ${FLANNEL_SUBNET}
-              ExecStart=/bin/bash -c "/usr/bin/docker -d --bip=${FLANNEL_SUBNET} --mtu=${FLANNEL_MTU} -s=overlay -H fd:// --dns=${FLANNEL_IP}"
+              ExecStart=/bin/bash -c "/usr/bin/docker -d --bip=${FLANNEL_SUBNET} --mtu=${FLANNEL_MTU} -s=overlay -H fd:// --registry-mirror=<%= @host.params['docker-mirror'] %>"
               [Install]
               WantedBy=multi-user.target
           - name: kube-proxy.service
@@ -65,9 +54,9 @@ oses:
               Requires=flannel.service
               [Service]
               ExecStartPre=-/usr/bin/mkdir -p /opt/bin
-              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/kube-proxy
-              ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-proxy
-              ExecStart=/opt/bin/kube-proxy \
+              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/hyperkube
+              ExecStartPre=/usr/bin/chmod +x /opt/bin/hyperkube
+              ExecStart=/opt/bin/hyperkube proxy
               --etcd_servers="<%= @host.params['etcd_servers'] %>" \
               --master=<%= @host.params['kubernetes_servers'] %> \
               --logtostderr=true
@@ -85,39 +74,23 @@ oses:
               EnvironmentFile=/run/flannel/subnet.env
               ExecStartPre=-/usr/bin/mkdir -p /opt/bin
               ExecStartPre=-/usr/bin/mkdir -p /etc/kubernetes/manifests
-              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/kubelet
-              ExecStartPre=/usr/bin/wget -N -P /etc/kubernetes/manifests <%= @host.params['kubernetes-binary-server'] -%>/manifests/cadvisor.manifest
-              ExecStartPre=/usr/bin/chmod +x /opt/bin/kubelet
-              ExecStart=/opt/bin/kubelet \
+              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/hyperkube
+              ExecStartPre=/usr/bin/wget -N -P /etc/kubernetes/manifests <%= @host.params['kubernetes-binary-server'] -%>/cadvisor.manifest
+              ExecStartPre=/usr/bin/chmod +x /opt/bin/hyperkube
+              ExecStart=/opt/bin/hyperkube kubelet \
               --address=0.0.0.0 \
               --port=10250 \
-              --hostname_override=<%= @host.ip %> \
+              --hostname_override=<%= @host.name %> \
               --etcd_servers=<%= @host.params['etcd_servers'] %> \
               --logtostderr=true \
               --api_servers=<%= @host.params['kubernetes_servers'] %> \
-              --config=/etc/kubernetes/manifests \
-              --cluster_domain=<%= @host.params['domain-name'] || 'local.domain.com' %> \
-              --cluster_dns=${FLANNEL_IP}
-              Restart=always
-              RestartSec=10
-          - name: skydns.service
-            command: start
-            content: |
-              [Unit]
-              Description=SkyDNS Service
-              Documentation=https://github.com/skynetservices/skydns
-              After=docker.service
-              Requires=docker.service
-              [Service]
-              ExecStartPre=-/usr/bin/mkdir -p /opt/bin
-              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/skydns
-              ExecStartPre=/usr/bin/chmod +x /opt/bin/skydns
-              ExecStart=/opt/bin/skydns \
-              -discover=true \
-              -kubernetes=true \
-              -machines=<%= @host.params['etcd_servers'] %> \
-              -master=<%= @host.params['kubernetes_servers'] %> \
-              -logtostderr=true
+<% if @host.params['domain-name'] -%>
+              --cluster_domain=<%= @host.params['domain-name'] %> \
+<% end -%>
+<% if @host.params['cluster-dns'] -%>
+              --cluster_dns=<%= @host.params['cluster-dns'] %> \
+<% end -%>
+              --config=/etc/kubernetes/manifests
               Restart=always
               RestartSec=10
 <% if @host.params['ssh_authorized_keys'] -%>
@@ -130,4 +103,3 @@ oses:
         - name: core
           passwd: <%= root_pass %>
 <% end -%>
-

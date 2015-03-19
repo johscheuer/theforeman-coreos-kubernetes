@@ -43,19 +43,6 @@ oses:
               ExecStart=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"<%= @host.params['overlay_network'] %>", "Backend": {"Type": "vxlan"}}'
               RestartSec=15s
               Restart=on-failure
-          - name: etcd-config-for-skydns.service
-            command: start
-            content: |
-              [Unit]
-              After=network-online.target 
-              Requires=network-online.target
-              After=etcd.service
-              Requires=etcd.service
-              Description=https://github.com/skynetservices/skydns
-              [Service]
-              ExecStart=/usr/bin/etcdctl set /skydns/config '{"dns_addr":"0.0.0.0:53","ttl":3600, "nameservers": ["8.8.8.8:53","8.8.4.4:53"], "domain":" <%= @host.params['domain-name'] || 'local.domain.com' %>"}'
-              RestartSec=15s
-              Restart=on-failure	
           - name: docker.service
             command: start
 <% if @host.params['ssh_authorized_keys'] -%>

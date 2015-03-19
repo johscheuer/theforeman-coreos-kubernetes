@@ -29,18 +29,6 @@ oses:
               [Service]
               Type=notify
               ExecStart=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"<%= @host.params['overlay_network'] %>", "Backend": {"Type": "vxlan"}}'
-          - name: etcd-config-for-skydns.service
-            command: start
-            content: |
-              [Unit]
-              After=network-online.target
-              Requires=network-online.target
-              After=etcd.service
-              Requires=etcd.service
-              Description=https://github.com/skynetservices/skydns
-              [Service]
-              Type=notify
-              ExecStart=/usr/bin/etcdctl set /skydns/config '{"dns_addr":"0.0.0.0:53","ttl":3600, "nameservers": ["8.8.8.8:53","8.8.4.4:53"], "domain":" <%= @host.params['domain-name'] || 'local.domain.com' %>"}'
           - name: flannel.service
             command: start
             content: |
@@ -58,17 +46,6 @@ oses:
               ExecStart=/opt/bin/flanneld -etcd-endpoints="127.0.0.1:4001"
               Restart=on-failure
               RestartSec=10
-          - name: add-flannel-host-ip.service
-            command: start
-            content: |
-              [Unit]
-              After=flannel.service
-              Wants=flannel.service
-              Description=Adds the Flannel host ip to the env variables to use them for the docker bridge
-              [Service]
-              Type=oneshot
-              EnvironmentFile=/run/flannel/subnet.env
-              ExecStart=/usr/bin/bash -c "echo FLANNEL_IP=${FLANNEL_SUBNET} | cut -d/ -f1 >> /run/flannel/subnet.env"
           - name: docker.service
             command: start
             content: |
@@ -81,7 +58,7 @@ oses:
               EnvironmentFile=/run/flannel/subnet.env
               ExecStartPre=/bin/mount --make-rprivate /
               ExecStartPre=/usr/bin/echo ${FLANNEL_SUBNET}
-              ExecStart=/bin/bash -c "/usr/bin/docker -d --bip=${FLANNEL_SUBNET} --mtu=${FLANNEL_MTU} -s=overlay -H fd:// --dns=${FLANNEL_IP}"
+              ExecStart=/bin/bash -c "/usr/bin/docker -d --bip=${FLANNEL_SUBNET} --mtu=${FLANNEL_MTU} -s=overlay -H fd://"
               [Install]
               WantedBy=multi-user.target
          - name: kube-apiserver.service
@@ -94,9 +71,9 @@ oses:
               Requires=flannel.service etcd.service
               [Service]
               ExecStartPre=-/usr/bin/mkdir -p /opt/bin
-              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/kube-apiserver
-              ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-apiserver
-              ExecStart=/opt/bin/kube-apiserver \
+              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/hyperkube
+              ExecStartPre=/usr/bin/chmod +x /opt/bin/hyperkube
+              ExecStart=/opt/bin/hyperkube apiserver \
               --address=0.0.0.0 \
               --port=8080 \
               --portal_net=<%= @host.params['overlay_network'] %> \
@@ -114,8 +91,8 @@ oses:
               Requires=kube-apiserver.service
               [Service]
               ExecStartPre=-/usr/bin/mkdir -p /opt/bin
-              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/kube-controller-manager
-              ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-controller-manager
+              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/hyperkube
+              ExecStartPre=/usr/bin/chmod +x /opt/bin/hyperkube controller-manager
               ExecStartPre=/usr/bin/curl 127.0.0.1:8080
               ExecStart=/opt/bin/kube-controller-manager --master=127.0.0.1:8080 --logtostderr=true
               Restart=always
@@ -130,8 +107,8 @@ oses:
               Requires=kube-apiserver.service
               [Service]
               ExecStartPre=-/usr/bin/mkdir -p /opt/bin
-              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/kube-scheduler
-              ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-scheduler
+              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/hyperkube
+              ExecStartPre=/usr/bin/chmod +x /opt/bin/hyperkube scheduler
               ExecStart=/opt/bin/kube-scheduler --master=127.0.0.1:8080
               Restart=always
               RestartSec=10
@@ -161,8 +138,8 @@ oses:
               Requires=flannel.service
               [Service]
               ExecStartPre=-/usr/bin/mkdir -p /opt/bin
-              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/kube-proxy
-              ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-proxy
+              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/hyperkube
+              ExecStartPre=/usr/bin/chmod +x /opt/bin/hyperkube proxy
               ExecStartPre=/usr/bin/curl 127.0.0.1:8080
               ExecStart=/opt/bin/kube-proxy \
               --etcd_servers=127.0.0.1:4001 \
@@ -180,36 +157,16 @@ oses:
               Requires=flannel.service
               [Service]
               ExecStartPre=-/usr/bin/mkdir -p /opt/bin
-              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/kubelet
+              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/hyperkube
               ExecStartPre=/usr/bin/chmod +x /opt/bin/kubelet
               ExecStartPre=/usr/bin/curl 127.0.0.1:8080
-              ExecStart=/opt/bin/kubelet \
+              ExecStart=/opt/bin/hyperkube kubelet \
               --address=0.0.0.0 \
               --port=10250 \
-              --hostname_override=<%= @host.ip %> \
+              --hostname_override=<%= @host.name %> \
               --etcd_servers=127.0.0.1:4001 \
               --logtostderr=true \
               --api_servers=127.0.0.1:8080 \
-              Restart=always
-              RestartSec=10
-          - name: skydns.service
-            command: start
-            content: |
-              [Unit]
-              Description=SkyDNS Service
-              Documentation=https://github.com/skynetservices/skydns
-              After=docker.service
-              Requires=docker.service
-              [Service]
-              ExecStartPre=-/usr/bin/mkdir -p /opt/bin
-              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/skydns
-              ExecStartPre=/usr/bin/chmod +x /opt/bin/skydns
-              ExecStart=/opt/bin/skydns \
-              -discover=true \
-              -kubernetes=true \
-              -machines=127.0.0.1:4001 \
-              -master=127.0.0.1:8080 \
-              -logtostderr=true
               Restart=always
               RestartSec=10
 <% if @host.params['ssh_authorized_keys'] -%>
@@ -217,4 +174,8 @@ oses:
   <% @host.params['ssh_authorized_keys'].split(',').map(&:strip).each do |ssh_key| -%>
       - "<%= ssh_key %>"
   <% end -%>
+<% else -%>
+      users:
+        - name: core
+          passwd: <%= root_pass %>
 <% end -%>
