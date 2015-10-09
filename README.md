@@ -1,6 +1,6 @@
 # Snippets
 
-You have to create a host parameter cloudconfig and insert the specific snippet name to use the different snippets with the same provisioning template.
+You have to create a host parameter cloudconfig and insert the specific snippet name to use the different snippets with the same provisioning template. You can find the default CoreOS templates for foreman at [github](https://github.com/theforeman/community-templates), which should be allready included if you use foreman > 1.8.
 
 # Import templates
 

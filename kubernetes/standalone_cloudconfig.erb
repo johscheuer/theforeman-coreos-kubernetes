@@ -8,12 +8,13 @@ oses:
       coreos:
         fleet:
           metadata: "role=kube-standalone"
-        etcd:
-          peers: 127.0.0.1:7001
-          addr: 127.0.0.1:4001
-          peer-addr: <%= @host.ip %>:7001
-        units:
-          - name: etcd.service
+        etcd2:
+          advertise-client-urls: http://<%= @host.ip %>:2379,http://<%= @host.ip %>:4001
+          initial-advertise-peer-urls: http://<%= @host.ip %>:2380,http://<%= @host.ip %>:7001
+          listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+          listen-peer-urls: http://0.0.0.0:2380,http://0.0.0.0:7001
+	units:
+          - name: etcd2.service
             command: start
           - name: fleet.service
             command: start

@@ -8,17 +8,15 @@ oses:
       coreos:
         fleet:
           metadata: "role=etcd"
-        etcd:
+        etcd2:
 <% if @host.params['peer_address'] != @host.ip -%>
-          peers: <%= @host.params['peer_address'] %>:7001
+          advertise-client-urls: http://<%= @host.params['peer_address'] %>:2379,http://<%= @host.params['peer_address'] %>:4001
+          initial-advertise-peer-urls: http://<%= @host.params['peer_address'] %>:2380,http://<%= @host.params['peer_address'] %>:7001
 <% end -%>
-          addr: <%= @host.ip %>:4001
-          peer-addr: <%= @host.ip %>:7001
-<% if @host.params['cluster_active_size'] != @host.ip -%>
-          cluster-active-size: <%= @host.params['cluster_active_size'] %>
-<% end -%>
+          listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+	  listen-peer-urls: http://0.0.0.0:2380,http://0.0.0.0:7001
         units:
-          - name: etcd.service
+          - name: etcd2.service
             command: start
           - name: fleet.socket
             command: start
@@ -43,8 +41,6 @@ oses:
               ExecStart=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"<%= @host.params['overlay_network'] %>", "Backend": {"Type": "vxlan"}}'
               RestartSec=15s
               Restart=on-failure
-          - name: docker.service
-            command: start
 <% if @host.params['ssh_authorized_keys'] -%>
       ssh_authorized_keys:
   <% @host.params['ssh_authorized_keys'].split(',').map(&:strip).each do |ssh_key| -%>
