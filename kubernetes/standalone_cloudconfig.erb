@@ -9,10 +9,10 @@ oses:
         fleet:
           metadata: "role=kube-standalone"
         etcd2:
-          advertise-client-urls: http://<%= @host.ip %>:2379,http://<%= @host.ip %>:4001
-          initial-advertise-peer-urls: http://<%= @host.ip %>:2380,http://<%= @host.ip %>:7001
-          listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
-          listen-peer-urls: http://0.0.0.0:2380,http://0.0.0.0:7001
+          advertise-client-urls: http://<%= @host.ip %>:2379
+          initial-advertise-peer-urls: http://<%= @host.ip %>:2380
+          listen-client-urls: http://0.0.0.0:2379
+          listen-peer-urls: http://0.0.0.0:2380
 	units:
           - name: etcd2.service
             command: start
@@ -44,7 +44,7 @@ oses:
               ExecStartPre=-/usr/bin/mkdir -p /opt/bin
               ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/flanneld
               ExecStartPre=/usr/bin/chmod +x /opt/bin/flanneld
-              ExecStart=/opt/bin/flanneld -etcd-endpoints="127.0.0.1:4001"
+              ExecStart=/opt/bin/flanneld -etcd-endpoints="127.0.0.1:2380"
               Restart=on-failure
               RestartSec=10
           - name: docker.service
@@ -78,7 +78,7 @@ oses:
               --address=0.0.0.0 \
               --port=8080 \
               --portal_net=<%= @host.params['overlay_network'] %> \
-              --etcd_servers="127.0.0.1:4001" \
+              --etcd_servers="127.0.0.1:2380" \
               --logtostderr=true
               Restart=always
               RestartSec=10
@@ -143,7 +143,6 @@ oses:
               ExecStartPre=/usr/bin/chmod +x /opt/bin/hyperkube proxy
               ExecStartPre=/usr/bin/curl 127.0.0.1:8080
               ExecStart=/opt/bin/kube-proxy \
-              --etcd_servers=127.0.0.1:4001 \
               --master=127.0.0.1:8080 \
               --logtostderr=true
               Restart=always
@@ -165,7 +164,6 @@ oses:
               --address=0.0.0.0 \
               --port=10250 \
               --hostname_override=<%= @host.name %> \
-              --etcd_servers=127.0.0.1:4001 \
               --logtostderr=true \
               --api_servers=127.0.0.1:8080 \
               Restart=always

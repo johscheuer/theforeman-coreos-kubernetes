@@ -1,3 +1,7 @@
+# Spoiler
+
+At the moment I upgrade all files in this repository to make it work with the newest (stable) kubernetes + etcd + kubernetes addons versions.
+
 # Snippets
 
 You have to create a host parameter cloudconfig and insert the specific snippet name to use the different snippets with the same provisioning template. You can find the default CoreOS templates for foreman at [github](https://github.com/theforeman/community-templates), which should be allready included if you use foreman > 1.8.
@@ -24,9 +28,9 @@ If you want to use different prefixes you have to adjust the names of the snippe
 
 ## CoreOS Cloud Config
 
-With this template you can deploy a simple CoreOS cluster with a discovery URL. You can get a new discovery URL when you curl [https://discovery.etcd.io/new](https://discovery.etcd.io/new).
+With this template you can deploy a simple CoreOS cluster with a discovery URL. You can get a new discovery URL when you curl [https://discovery.etcd.io/new](https://discovery.etcd.io/new). You can also append the site of your cluster for example if you want to create an etcd cluster with 3 Nodes curl the following URL: [https://discovery.etcd.io/new?size=3](https://discovery.etcd.io/new?size=3)
 
-A description about the host parameters are at [GitHub](https://github.com/theforeman/community-templates/tree/master/coreos)
+A description about the host parameters are at [GitHub](https://github.com/theforeman/community-templates/tree/develop/coreos)
 
 ## etcd Cloud Config
 
@@ -42,7 +46,7 @@ Host parameters:
 
 You should define a parent host group for your kubernetes deployment with the following parameters:
 
-* etcd_servers: Your etcd servers seperated with a "," e.g. http://172.24.1.150:4001,http://172.24.1.140
+* etcd_servers: Your etcd servers seperated with a "," e.g. http://172.24.1.150:2380,http://172.24.1.140:2380
 
 ## Note
 
@@ -57,7 +61,7 @@ Host parameters:
 
 * cloudconfig: kubernetes master_cloudconfig
 * fleet_endpoint: Any of your etcd nodes e.g. http://172.24.1.150:4002 this is needed for the Kube-register, which automatically adds new Kubernetes-minions.
-* etcd_servers: if you have a seperate etcd-cluster (which I preferr) you have to insert the etcd nodes e.g. "http://172.24.1.150:4001,http://172.24.1.140:4001,http://172.24.1.105:4001"
+* etcd_servers: if you have a seperate etcd-cluster (which I preferr) you have to insert the etcd nodes e.g. "http://172.24.1.150:2380,http://172.24.1.140:2380,http://172.24.1.105:2380"
 
 ## kubernetes minion_cloudconfig
 
@@ -67,7 +71,7 @@ Host parameters:
 
 * cloudconfig: kubernetes minion_cloudconfig
 * kubernetes_servers: The kubernetes server e.g. http://172.24.1.148:8080.
-* etcd_servers: if you have a seperate etcd-cluster (which I preferr) you have to insert the etcd nodes e.g. "http://172.24.1.150:4001,http://172.24.1.140:4001,http://172.24.1.105:4001"
+* etcd_servers: if you have a seperate etcd-cluster (which I preferr) you have to insert the etcd nodes e.g. "http://172.24.1.150:2380,http://172.24.1.140:2380,http://172.24.1.105:2380"
 
 ## kubernetes standalone_cloudconfig
 

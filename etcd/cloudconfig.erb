@@ -10,11 +10,12 @@ oses:
           metadata: "role=etcd"
         etcd2:
 <% if @host.params['peer_address'] != @host.ip -%>
-          advertise-client-urls: http://<%= @host.params['peer_address'] %>:2379,http://<%= @host.params['peer_address'] %>:4001
-          initial-advertise-peer-urls: http://<%= @host.params['peer_address'] %>:2380,http://<%= @host.params['peer_address'] %>:7001
+          initial-cluster: master=http://<master-private-ip>:2380
 <% end -%>
-          listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
-	  listen-peer-urls: http://0.0.0.0:2380,http://0.0.0.0:7001
+          advertise-client-urls: http://<%= @host.params['peer_address'] %>:2379
+          initial-advertise-peer-urls: http://<%= @host.params['peer_address'] %>
+          listen-client-urls: http://0.0.0.0:2379
+	        listen-peer-urls: http://0.0.0.0:2380
         units:
           - name: etcd2.service
             command: start

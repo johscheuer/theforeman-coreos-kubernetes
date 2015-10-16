@@ -57,7 +57,6 @@ oses:
               ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/hyperkube
               ExecStartPre=/usr/bin/chmod +x /opt/bin/hyperkube
               ExecStart=/opt/bin/hyperkube proxy
-              --etcd_servers="<%= @host.params['etcd_servers'] %>" \
               --master=<%= @host.params['kubernetes_servers'] %> \
               --logtostderr=true
               Restart=always
@@ -81,7 +80,6 @@ oses:
               --address=0.0.0.0 \
               --port=10250 \
               --hostname_override=<%= @host.name %> \
-              --etcd_servers=<%= @host.params['etcd_servers'] %> \
               --logtostderr=true \
               --api_servers=<%= @host.params['kubernetes_servers'] %> \
 <% if @host.params['domain-name'] -%>
