@@ -5,90 +5,96 @@ name: minion_cloudconfig
 oses:
 - CoreOS
 %>
+      write-files:
+        - path: /opt/bin/wupiao
+          permissions: '0755'
+          content: |
+            #!/bin/bash
+            # [w]ait [u]ntil [p]ort [i]s [a]ctually [o]pen
+            [ -n "$1" ] && [ -n "$2" ] && while ! curl --output /dev/null \
+              --silent --head --fail \
+              http://${1}:${2}; do sleep 1 && echo -n .; done;
+            exit $?
+
       coreos:
         fleet:
           metadata: "role=kube-minion"
-<% if @host.params['etcd_servers'] -%>
-          etcd_servers: "<%= @host.params['etcd_servers'] %>"
-<% end -%>
+          etcd2:
+            listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+            advertise-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+            initial-cluster: master=http://<%= @host.params['k8s_master'] %>:2380
+            proxy: on
         units:
-          - name: etcd.service
-            mask: true
           - name: fleet.service
-            command: start 
-          - name: flannel.service
             command: start
-            content: |
-              [Unit]
-              After=network-online.target
-              Wants=network-online.target
-              Description=flannel is an etcd backed overlay network for containers
-              [Service]
-              Type=notify
-              ExecStartPre=-/usr/bin/mkdir -p /opt/bin
-              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/flanneld
-              ExecStartPre=/usr/bin/chmod +x /opt/bin/flanneld
-              ExecStart=/opt/bin/flanneld -etcd-endpoints="<%= @host.params['etcd_servers'] %>"
+          - name: flanneld.service
+            command: start
+            drop-ins:
+              - name: 50-network-config.conf
+                content: |
+                  [Unit]
+                  Requires=etcd2.service
+                  [Service]
+                  ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{"Network":"<%= @host.params['overlay_network'] %>", "Backend": {"Type": "vxlan"}}'
           - name: docker.service
             command: start
+          - name: setup-network-environment.service
+            command: start
             content: |
               [Unit]
-              After=flannel.service
-              Requires=flannel.service
-              Description=Docker Application Container Engine
-              Documentation=http://docs.docker.io
+              Description=Setup Network Environment
+              Documentation=https://github.com/kelseyhightower/setup-network-environment
+              Requires=network-online.target
+              After=network-online.target
               [Service]
-              EnvironmentFile=/run/flannel/subnet.env
-              ExecStartPre=/bin/mount --make-rprivate /
-              ExecStartPre=/usr/bin/echo ${FLANNEL_SUBNET}
-              ExecStart=/bin/bash -c "/usr/bin/docker daemon --bip=${FLANNEL_SUBNET} --mtu=${FLANNEL_MTU} -s=overlay -H fd:// --registry-mirror=<%= @host.params['docker-mirror'] %>"
-              [Install]
-              WantedBy=multi-user.target
+              ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+              ExecStartPre=/usr/bin/curl -L -o /opt/bin/setup-network-environment -z /opt/bin/setup-network-environment https://github.com/kelseyhightower/setup-network-environment/releases/download/v1.0.0/setup-network-environment
+              ExecStartPre=/usr/bin/chmod +x /opt/bin/setup-network-environment
+              ExecStart=/opt/bin/setup-network-environment
+              RemainAfterExit=yes
+              Type=oneshot
           - name: kube-proxy.service
             command: start
             content: |
               [Unit]
               Description=Kubernetes Proxy
               Documentation=https://github.com/GoogleCloudPlatform/kubernetes
-              After=flannel.service
-              Requires=flannel.service
+              Requires=setup-network-environment.service
+              After=setup-network-environment.service
               [Service]
-              ExecStartPre=-/usr/bin/mkdir -p /opt/bin
-              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/hyperkube
-              ExecStartPre=/usr/bin/chmod +x /opt/bin/hyperkube
-              ExecStart=/opt/bin/hyperkube proxy
-              --master=<%= @host.params['kubernetes_servers'] %> \
+              ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-proxy -z /opt/bin/kube-proxy <%= @host.params['kubernetes-binary-server'] -%>/release/v1.1.2/bin/linux/amd64/kube-proxy
+              ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-proxy
+              # wait for kubernetes master to be up and ready
+              ExecStartPre=/opt/bin/wupiao <%= @host.params['k8s_master'] %> 8080
+              ExecStart=/opt/bin/kube-proxy \
+              --master=<%= @host.params['k8s_master'] %>:8080 \
               --logtostderr=true
               Restart=always
               RestartSec=10
-          - name: kubelet.service
+          - name: kube-kubelet.service
             command: start
             content: |
               [Unit]
               Description=Kubernetes Kubelet
               Documentation=https://github.com/GoogleCloudPlatform/kubernetes
-              After=flannel.service
-              Requires=flannel.service
+              Requires=setup-network-environment.service
+              After=setup-network-environment.service
               [Service]
-              EnvironmentFile=/run/flannel/subnet.env
-              ExecStartPre=-/usr/bin/mkdir -p /opt/bin
-              ExecStartPre=-/usr/bin/mkdir -p /etc/kubernetes/manifests
-              ExecStartPre=/usr/bin/wget -N -P /opt/bin <%= @host.params['kubernetes-binary-server'] -%>/hyperkube
-              ExecStartPre=/usr/bin/wget -N -P /etc/kubernetes/manifests <%= @host.params['kubernetes-binary-server'] -%>/cadvisor.manifest
-              ExecStartPre=/usr/bin/chmod +x /opt/bin/hyperkube
-              ExecStart=/opt/bin/hyperkube kubelet \
+              EnvironmentFile=/etc/network-environment
+              ExecStartPre=/usr/bin/curl -L -o /opt/bin/kubelet -z /opt/bin/kubelet <%= @host.params['kubernetes-binary-server'] -%>/release/v1.1.2/bin/linux/amd64/kubelet
+              ExecStartPre=/usr/bin/chmod +x /opt/bin/kubelet
+              # wait for kubernetes master to be up and ready
+              ExecStartPre=/opt/bin/wupiao <%= @host.params['k8s_master'] %> 8080
+              ExecStart=/opt/bin/kubelet \
               --address=0.0.0.0 \
               --port=10250 \
-              --hostname_override=<%= @host.name %> \
+              --hostname-override=<%= @host.ip %> \
+              --api-servers=<%= @host.params['k8s_master'] %>:8080 \
+              --allow-privileged=true \
               --logtostderr=true \
-              --api_servers=<%= @host.params['kubernetes_servers'] %> \
-<% if @host.params['domain-name'] -%>
-              --cluster_domain=<%= @host.params['domain-name'] %> \
-<% end -%>
-<% if @host.params['cluster-dns'] -%>
-              --cluster_dns=<%= @host.params['cluster-dns'] %> \
-<% end -%>
-              --config=/etc/kubernetes/manifests
+              --cadvisor-port=4194 \
+              --healthz-bind-address=0.0.0.0 \
+              --healthz-port=10248
               Restart=always
               RestartSec=10
 <% if @host.params['ssh_authorized_keys'] -%>
