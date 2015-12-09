@@ -1,93 +1,49 @@
-# Spoiler
-
-At the moment I upgrade all files in this repository to make it work with the newest (stable) kubernetes + etcd + kubernetes addons versions.
-
 # Snippets
+You have to create a host parameter cloudconfig and insert the specific snippet name to use the different snippets with the same provisioning template. You can find the default CoreOS templates for foreman at [github](https://github.com/theforeman/community-templates/tree/develop/coreos), which should be already included if you use foreman > 1.8.
 
-You have to create a host parameter cloudconfig and insert the specific snippet name to use the different snippets with the same provisioning template. You can find the default CoreOS templates for foreman at [github](https://github.com/theforeman/community-templates), which should be allready included if you use foreman > 1.8.
+## Import templates
+The easiest way to import these templates into your foreman is using [foreman_templates](https://github.com/theforeman/foreman_templates).
 
-# Import templates
+I used a rake task for different prefix:
 
-The easiest way to import these templates into your foreman is using [foreman_templates](https://github.com/theforeman/foreman_templates). 
-
-I used 2 rake tasks for different prefixes:
-
-`foreman-rake templates:sync repo="https://github.com/johscheuer/theforeman-coreos-kubernetes.git" prefix="kubernetes" dirname="/kubernetes"`
-`foreman-rake templates:sync repo="https://github.com/johscheuer/theforeman-coreos-kubernetes.git" prefix="etcd" dirname="/etcd"`
+```Bash
+foreman-rake templates:sync repo="https://github.com/johscheuer/theforeman-coreos-kubernetes.git" prefix="k8s" dirname="/k8s"
+```
 
 If you want to use different prefixes you have to adjust the names of the snippets.
 
 ## Global host Parameters
+- kubernetes-binary-server: server which provides the Kubernetes binaries to download. Should be as default: [https://storage.googleapis.com/kubernetes-release](https://storage.googleapis.com/kubernetes-release)
+- install-disk: e.g. /dev/sda
+- mirror-server: your mirror server if you don't want to download CoreOS every time you install a node
+- overlay_network: 10.0.0.0/16 used by flannel.
+- ssh_authorized_keys: your ssh key(s) used to login into the nodes. You can specify multiple keys by separating them with a ,
 
-* kubernetes-binary-server: server which provides the kubernetes, flannel and skydns binaries to download
-* install-disk: e.g. /dev/sda
-* mirror-server: your mirror server if you don't want to download CoreOS everytime you install a node
-* overlay_network: 10.0.0.0/16 used by flannel.
-* ssh_authorized_keys: your ssh key(s) used to login into the nodes. You can specify multiple keys by seperating them with a ,
-* domain-name: domain name for your skydns domain Default = local.domain.com
-
-## CoreOS Cloud Config
-
-With this template you can deploy a simple CoreOS cluster with a discovery URL. You can get a new discovery URL when you curl [https://discovery.etcd.io/new](https://discovery.etcd.io/new). You can also append the site of your cluster for example if you want to create an etcd cluster with 3 Nodes curl the following URL: [https://discovery.etcd.io/new?size=3](https://discovery.etcd.io/new?size=3)
-
-A description about the host parameters are at [GitHub](https://github.com/theforeman/community-templates/tree/develop/coreos)
-
-## etcd Cloud Config
-
-With this template you are able to deploy an etcd cluster. Also this template inserts configuration into etcd for Flannel (an overlay network) and SkyDNS (dynamic DNS resolver with etcd as backend).
-
-Host parameters:
-
-* cloudconfig: etcd_cloudconfig
-* cluster_active_size: How many nodes are active at the ectd election ([Raft Consensus](https://github.com/coreos/raft)) the rest is shadering. The optimal cluster size is (n / 2) - 1 -> should be an odd number.
-* peer_address: The first node which is started. Is the entry point for every new joining node. 
-
-## Kubernetes snippets
-
-You should define a parent host group for your kubernetes deployment with the following parameters:
-
-* etcd_servers: Your etcd servers seperated with a "," e.g. http://172.24.1.150:2380,http://172.24.1.140:2380
-
-## Note
-
-* If you want to run Kubernetes with a Master and some Minions you need to start at least one etcd node and create the etcd_servers host-param which points to the etcd node(s).
-* If you use CoreOS < 561.0.0 you have to change the Daemon [storage-driver](https://docs.docker.com/reference/commandline/cli/#daemon-storage-driver-option) btrfs because because overlay is unsupported on btrfs.
+# Kubernetes
+With these snippets you can either deploy a standalone Kubernetes which means that all components of Kubernetes are running on one single node. One the the hand you can deploy a single master node which contains etcd + Kubernetes master components and as many minion nodes as you want.
 
 ## kubernetes master_cloudconfig
-
-This snippet installs a kubernetes-master which allows you to interact with kubernetes and deploy your services.
+This snippet installs a kubernetes-master which allows you to interact with Kubernetes and deploy your services.
 
 Host parameters:
-
-* cloudconfig: kubernetes master_cloudconfig
-* fleet_endpoint: Any of your etcd nodes e.g. http://172.24.1.150:4002 this is needed for the Kube-register, which automatically adds new Kubernetes-minions.
-* etcd_servers: if you have a seperate etcd-cluster (which I preferr) you have to insert the etcd nodes e.g. "http://172.24.1.150:2380,http://172.24.1.140:2380,http://172.24.1.105:2380"
+- cloudconfig: k8s master_cloudconfig
 
 ## kubernetes minion_cloudconfig
-
-This snippet installs a kubernetes-minion, flannel, skydns and starts an cAdvisor instance. You can access the cAdviser web-interface via. Node-IP:4194.
+This snippet installs a kubernetes-minion.
 
 Host parameters:
-
-* cloudconfig: kubernetes minion_cloudconfig
-* kubernetes_servers: The kubernetes server e.g. http://172.24.1.148:8080.
-* etcd_servers: if you have a seperate etcd-cluster (which I preferr) you have to insert the etcd nodes e.g. "http://172.24.1.150:2380,http://172.24.1.140:2380,http://172.24.1.105:2380"
+- cloudconfig: k8s minion_cloudconfig
+- k8s_master: The Kubernetes master e.g. [http://172.24.1.148](http://172.24.1.148).
 
 ## kubernetes standalone_cloudconfig
-
 This snippet installs the kube-master and a kube-minion on the same node.
 
 Host parameters:
-
-* cloudconfig: kubernetes standalone_cloudconfig
+- cloudconfig: k8s standalone_cloudconfig
 
 # Tools
-
 For the deployment the following tools were used:
-
-* [foreman_templates](https://github.com/theforeman/foreman_templates): This plugin will sync the contents of the Foreman Community Templates repository (or a git repo of your choice) to your local Foreman instance
-* [Flannel](https://github.com/coreos/flannel): An overlay Network to support Kubernetes IP-per-Service.
-* [Kubernetes](https://github.com/GoogleCloudPlatform/kubernetes): Container Cluster Manager.
-* [skydns](https://github.com/skynetservices/skydns): A dynamic DNS Service with etcd backend.
-* [kube-register](https://github.com/kelseyhightower/kube-register): Register Kubernetes Kubelet machines with the Kubernetes API server using Fleet data.
-* [CoreOS](https://github.com/coreos): Linux for Massive Server Deployments.
+- [foreman_templates](https://github.com/theforeman/foreman_templates): This plugin will sync the contents of the Foreman Community Templates repository (or a git repo of your choice) to your local Foreman instance
+- [Flannel](https://github.com/coreos/flannel): An overlay Network to support Kubernetes IP-per-Service.
+- [Kubernetes](https://github.com/GoogleCloudPlatform/kubernetes): Container Cluster Manager.
+- [CoreOS](https://github.com/coreos): Linux for Massive Server Deployments.
