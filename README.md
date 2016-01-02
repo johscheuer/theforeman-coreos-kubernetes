@@ -18,9 +18,11 @@ If you want to use different prefixes you have to adjust the names of the snippe
 - mirror-server: your mirror server if you don't want to download CoreOS every time you install a node
 - overlay_network: 10.0.0.0/16 used by flannel.
 - ssh_authorized_keys: your ssh key(s) used to login into the nodes. You can specify multiple keys by separating them with a ,
+- k8s_release: Kubernetes release version which you like to deploy e.g. "v.1.1.2" without "
 
 ## Adjust the CoreOS Template
 Replace the following line [32](https://github.com/theforeman/community-templates/blob/develop/coreos/provision.erb#L32) with this content (the spaces are important) or create a second template for this:
+
 ```yaml
       <%= snippet @host.params['cloudconfig'] %>
 ```

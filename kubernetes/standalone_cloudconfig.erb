@@ -85,7 +85,7 @@ oses:
               [Service]
               EnvironmentFile=/etc/network-environment
               ExecStartPre=-/usr/bin/mkdir -p /opt/bin
-              ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-apiserver -z /opt/bin/kube-apiserver <%= @host.params['kubernetes-binary-server'] -%>/release/v1.1.2/bin/linux/amd64/kube-apiserver
+              ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-apiserver -z /opt/bin/kube-apiserver <%= @host.params['kubernetes-binary-server'] -%>/release/<%= @host.params['k8s_release'] %>/bin/linux/amd64/kube-apiserver
               ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-apiserver
               ExecStartPre=/opt/bin/wupiao 127.0.0.1:2379/v2/machines
               ExecStart=/opt/bin/kube-apiserver \
@@ -113,7 +113,7 @@ oses:
               Requires=kube-apiserver.service
               After=kube-apiserver.service
               [Service]
-              ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-controller-manager -z /opt/bin/kube-controller-manager <%= @host.params['kubernetes-binary-server'] -%>/release/v1.1.2/bin/linux/amd64/kube-controller-manager
+              ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-controller-manager -z /opt/bin/kube-controller-manager <%= @host.params['kubernetes-binary-server'] -%>/release/<%= @host.params['k8s_release'] %>/bin/linux/amd64/kube-controller-manager
               ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-controller-manager
               ExecStart=/opt/bin/kube-controller-manager \
               --service-account-private-key-file=/opt/bin/kube-serviceaccount.key \
@@ -130,7 +130,7 @@ oses:
               Requires=kube-apiserver.service
               After=kube-apiserver.service
               [Service]
-              ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-scheduler -z /opt/bin/kube-scheduler <%= @host.params['kubernetes-binary-server'] -%>/release/v1.1.2/bin/linux/amd64/kube-scheduler
+              ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-scheduler -z /opt/bin/kube-scheduler <%= @host.params['kubernetes-binary-server'] -%>/release/<%= @host.params['k8s_release'] %>/bin/linux/amd64/kube-scheduler
               ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-scheduler
               ExecStart=/opt/bin/kube-scheduler --master=127.0.0.1:8080
               Restart=always
@@ -144,7 +144,7 @@ oses:
               Requires=setup-network-environment.service
               After=setup-network-environment.service
               [Service]
-              ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-proxy -z /opt/bin/kube-proxy <%= @host.params['kubernetes-binary-server'] -%>/release/v1.1.2/bin/linux/amd64/kube-proxy
+              ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-proxy -z /opt/bin/kube-proxy <%= @host.params['kubernetes-binary-server'] -%>/release/<%= @host.params['k8s_release'] %>/bin/linux/amd64/kube-proxy
               ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-proxy
               # wait for kubernetes master to be up and ready
               ExecStartPre=/opt/bin/wupiao 127.0.0.1 8080
@@ -163,7 +163,7 @@ oses:
               After=setup-network-environment.service
               [Service]
               EnvironmentFile=/etc/network-environment
-              ExecStartPre=/usr/bin/curl -L -o /opt/bin/kubelet -z /opt/bin/kubelet <%= @host.params['kubernetes-binary-server'] -%>/release/v1.1.2/bin/linux/amd64/kubelet
+              ExecStartPre=/usr/bin/curl -L -o /opt/bin/kubelet -z /opt/bin/kubelet <%= @host.params['kubernetes-binary-server'] -%>/release/<%= @host.params['k8s_release'] %>/bin/linux/amd64/kubelet
               ExecStartPre=/usr/bin/chmod +x /opt/bin/kubelet
               # wait for kubernetes master to be up and ready
               ExecStartPre=/opt/bin/wupiao 127.0.0.1 8080
