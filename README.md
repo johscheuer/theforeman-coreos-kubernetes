@@ -13,7 +13,7 @@ foreman-rake templates:sync repo="https://github.com/johscheuer/theforeman-coreo
 If you want to use different prefixes you have to adjust the names of the snippets.
 
 ## Global host Parameters
-- kubernetes-binary-server: server which provides the Kubernetes binaries to download. Should be as default: [https://storage.googleapis.com/kubernetes-release](https://storage.googleapis.com/kubernetes-release)
+- kubernetes-binary-server: server which provides the Kubernetes binaries to download. Default is: [https://storage.googleapis.com/kubernetes-release](https://storage.googleapis.com/kubernetes-release)
 - install-disk: e.g. /dev/sda
 - mirror-server: your mirror server if you don't want to download CoreOS every time you install a node
 - overlay_network: 10.0.0.0/16 used by flannel.
