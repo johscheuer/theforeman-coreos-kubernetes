@@ -15,11 +15,10 @@ oses:
               --silent --head --fail \
               http://${1}:${2}; do sleep 1 && echo -n .; done;
             exit $?
-
       coreos:
         fleet:
-          metadata: "role=kube-minion"
-          etcd2:
+            metadata: "role=kube-minion"
+        etcd2:
             listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
             advertise-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
             initial-cluster: master=http://<%= @host.params['k8s_master'] %>:2380

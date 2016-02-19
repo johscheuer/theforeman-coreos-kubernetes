@@ -55,3 +55,4 @@ For the deployment the following tools were used:
 - [Flannel](https://github.com/coreos/flannel): An overlay Network to support Kubernetes IP-per-Service.
 - [Kubernetes](https://github.com/GoogleCloudPlatform/kubernetes): Container Cluster Manager.
 - [CoreOS](https://github.com/coreos): Linux for Massive Server Deployments.
+- [Cloud-validator](https://coreos.com/validate): Useful tool for checking the syntax of your cloud-init
