@@ -146,7 +146,7 @@ oses:
               ExecStartPre=/usr/bin/curl -L -o /opt/bin/kube-proxy -z /opt/bin/kube-proxy <%= @host.params['kubernetes-binary-server'] || 'https://storage.googleapis.com/kubernetes-release' -%>/release/<%= @host.params['k8s_release'] %>/bin/linux/amd64/kube-proxy
               ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-proxy
               # wait for kubernetes master to be up and ready
-              ExecStartPre=/opt/bin/wupiao 127.0.0.1 8080
+              ExecStartPre=/opt/bin/wupiao 127.0.0.1:8080
               ExecStart=/opt/bin/kube-proxy \
               --master=127.0.0.1:8080 \
               --logtostderr=true
@@ -165,7 +165,7 @@ oses:
               ExecStartPre=/usr/bin/curl -L -o /opt/bin/kubelet -z /opt/bin/kubelet <%= @host.params['kubernetes-binary-server'] || 'https://storage.googleapis.com/kubernetes-release' -%>/release/<%= @host.params['k8s_release'] %>/bin/linux/amd64/kubelet
               ExecStartPre=/usr/bin/chmod +x /opt/bin/kubelet
               # wait for kubernetes master to be up and ready
-              ExecStartPre=/opt/bin/wupiao 127.0.0.1 8080
+              ExecStartPre=/opt/bin/wupiao 127.0.0.1:8080
               ExecStart=/opt/bin/kubelet \
               --address=0.0.0.0 \
               --port=10250 \
