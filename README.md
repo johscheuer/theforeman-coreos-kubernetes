@@ -41,7 +41,7 @@ This snippet installs a kubernetes-minion.
 
 Host parameters:
 - cloudconfig: k8s_minion_cloudconfig
-- k8s_master: The Kubernetes master e.g. [http://172.24.1.148](http://172.24.1.148).
+- k8s_master: The Kubernetes master e.g. [172.24.1.148](172.24.1.148) (without "http://" this gets added automatically).
 
 ## kubernetes standalone_cloudconfig
 This snippet installs the kube-master and a kube-minion on the same node.
