@@ -14,11 +14,11 @@ If you want to use different prefixes you have to adjust the names of the snippe
 
 ## Global host Parameters
 - kubernetes-binary-server: server which provides the Kubernetes binaries to download. Default is: [https://storage.googleapis.com/kubernetes-release](https://storage.googleapis.com/kubernetes-release)
-- install-disk: e.g. /dev/sda
+- install-disk: e.g. `/dev/sda`
 - mirror-server: your mirror server if you don't want to download CoreOS every time you install a node
 - overlay_network: 10.0.0.0/16 used by flannel.
 - ssh_authorized_keys: your ssh key(s) used to login into the nodes. You can specify multiple keys by separating them with a ,
-- k8s_release: Kubernetes release version which you like to deploy e.g. "v.1.1.2" without "
+- k8s_release: Kubernetes release version which you like to deploy e.g. `v.1.3.5`
 
 ## Adjust the CoreOS Template
 Replace the following line [32](https://github.com/theforeman/community-templates/blob/develop/coreos/provision.erb#L32) with this content (the spaces are important) or create a second template for this:
@@ -41,7 +41,7 @@ This snippet installs a kubernetes-minion.
 
 Host parameters:
 - cloudconfig: k8s_minion_cloudconfig
-- k8s_master: The Kubernetes master e.g. [172.24.1.148](172.24.1.148) (without "http://" this gets added automatically).
+- k8s_master: The Kubernetes master e.g. `172.24.1.148`  (without `http://` this gets added automatically).
 
 ## kubernetes standalone_cloudconfig
 This snippet installs the kube-master and a kube-minion on the same node.
