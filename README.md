@@ -21,7 +21,7 @@ If you want to use different prefixes you have to adjust the names of the snippe
 - k8s_release: Kubernetes release version which you like to deploy e.g. `v.1.3.5`
 
 ## Adjust the CoreOS Template
-Replace the following line [32](https://github.com/theforeman/community-templates/blob/develop/coreos/provision.erb#L32) with this content (the spaces are important) or create a second template for this:
+Replace the `<%= snippet 'coreos_cloudconfig' %>` line [41](https://github.com/theforeman/community-templates/blob/develop/provisioning_templates/provision/coreos_provision.erb#L41) with this content (the spaces are important) or create a second template for this:
 
 ```yaml
       <%= snippet @host.params['cloudconfig'] %>
