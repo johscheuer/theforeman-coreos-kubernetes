@@ -1,9 +1,12 @@
+# Supported version of Kubernetes:
+1.5.3
+
 # Snippets
 You have to create a host parameter cloudconfig and insert the specific snippet name to use the different snippets with the same provisioning template. You can find the default CoreOS templates for foreman at [github](https://github.com/theforeman/community-templates/tree/develop/coreos), which should be already included if you use foreman > 1.8.
 
 ## Import templates
 The easiest way to import these templates into your foreman is using [foreman_templates](https://github.com/theforeman/foreman_templates).
-For the latest version 1.14, insatll the following package before running the foreman-rake command below:
+For the latest version 1.14, install the following package before running the foreman-rake command below:
 ~~~~
 yum install tfm-rubygem-foreman_templates
 ~~~~
